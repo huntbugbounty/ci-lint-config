@@ -1,0 +1,11 @@
+{
+  "name": "ci-lint-config",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^9.13.0"
+  },
+  "scripts": {
+    "test": "echo ok"
+  }
+}
